@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Controllers\Auth;
+namespace Prego\Http\Controllers\Auth;
 
-use App\User;
+use Prego\User;
 use Validator;
-use App\Http\Controllers\Controller;
+use Prego\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\ThrottlesLogins;
 use Illuminate\Foundation\Auth\AuthenticatesAndRegistersUsers;
 
