@@ -2,71 +2,69 @@
 
 namespace Prego\Http\Controllers\Auth;
 
-use Prego\User;
+use Auth;
 use Validator;
+use Socialite;
+use Prego\User;
+use Illuminate\Http\Request;
+use Illuminate\Mail\Mailer as Mail;
 use Prego\Http\Controllers\Controller;
+use Prego\Http\Requests\RegisterRequest;
+use Prego\Http\Repository\ChannelRepository;
 use Illuminate\Foundation\Auth\ThrottlesLogins;
 use Illuminate\Foundation\Auth\AuthenticatesAndRegistersUsers;
 
 class AuthController extends Controller
 {
-    /*
-    |--------------------------------------------------------------------------
-    | Registration & Login Controller
-    |--------------------------------------------------------------------------
-    |
-    | This controller handles the registration of new users, as well as the
-    | authentication of existing users. By default, this controller uses
-    | a simple trait to add these behaviors. Why don't you explore it?
-    |
-    */
-
-    use AuthenticatesAndRegistersUsers, ThrottlesLogins;
-
-    /**
-     * Where to redirect users after login / registration.
-     *
-     * @var string
-     */
-    protected $redirectTo = '/';
-
-    /**
-     * Create a new authentication controller instance.
-     *
-     * @return void
-     */
-    public function __construct()
+    public function getRegister()
     {
-        $this->middleware($this->guestMiddleware(), ['except' => 'logout']);
+        return view('auth.register');
+    }
+ 
+    public function getLogin()
+    {
+        return view('auth.login');
     }
 
-    /**
-     * Get a validator for an incoming registration request.
-     *
-     * @param  array  $data
-     * @return \Illuminate\Contracts\Validation\Validator
-     */
-    protected function validator(array $data)
+    public function postRegister(Request $request)
     {
-        return Validator::make($data, [
-            'name' => 'required|max:255',
-            'email' => 'required|email|max:255|unique:users',
-            'password' => 'required|min:6|confirmed',
+        $this->validate($request, [
+            'email' => 'required|unique:users|email|max:255',
+            'username' => 'required|unique:users|alpha_dash|max:20',
+            'password' => 'required|min:6',
         ]);
+
+        User::create([
+            'email' => $request->input('email'),
+            'username' => $request->input('username'),
+            'password' => bcrypt($request->input('password'))
+        ]);
+
+        return redirect()
+                    ->route('index')
+                    ->withInfo('Your account has been created and you can now sign in');
     }
 
-    /**
-     * Create a new user instance after a valid registration.
-     *
-     * @param  array  $data
-     * @return User
-     */
-    protected function create(array $data)
+    public function postLogin(Request $request)
     {
-        return User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => bcrypt($data['password']),
+        $this->validate($request, [
+            'email' => 'required',
+            'password' => 'required'
         ]);
+
+        $authStatus = Auth::attempt($request->only(['email', 'password']), $request->has('remember'));
+
+        if (!$authStatus) {
+            return redirect()->back()->with('info', 'Invalid Email or Password');
+        }
+
+        return redirect()->route('index')->with('info', 'You are now signed in');
+    }
+
+    public function logOut()
+    {
+        Auth::logout();
+ 
+        return redirect()->route('index');
     }
 }
